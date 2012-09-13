@@ -1,38 +1,53 @@
 # Exercise 24
 
 from math import pi
-import sys
 
-def Stokes_const(d, mu, rho_b, V):
-    return (-3*pi*d*mu)/(rho_b*V)
+"""
+def Stokes_const(d, mu, rho_b, V) :
+    return (3*pi*d*mu)/(rho_b*V)
+"""
+
+"""
+def quadratic_const(C_D, rho, A, rho_b, V) :
+    return (C_D*rho*A)/(2*rho_b*V)
+"""
+def solver(dt, rho_b, m, V, d, A, rho, C_D, v_0, g=9.81, v):
+    v[0] = v_0
+    for i in range(len(v)-1):
+        Re = (rho*d*v[i])/mu
+        if Re < 1:
+            a = (3*pi*d*mu)/(rho_b*V)
+        else:
+            a = (C_D*rho*A)/(2*rho_b*V)
+
+        v[i+1] = (v[i] + dt*b)/(1 + dt*a*abs(v[i]))
+        
+        return v
 
 
-def quadratic_const(C_D, rho, A, rho_b, V):
-    return (-C_D*rho*A)/(2*rho_b*V)
 
-rho_b = float(sys.argv[1])
-m = float(sys.argv[2])
-V = float(m/rho_b)
-d = float(sys.argv[3])
+
+
+
+
+dt = float(sys.argv[1])
+T = 20.0 # seconds of simulation
+N = T/dt
+
+t = linspace(0,T,N)
+v = zeros(N)
+
+rho_b = 1003  # kg/m^3
+m = 80  # kg
+V = float(m/rho_b) #m^3
+d = 0.5  # m
 A = pi*(d/2)**2
-rho = float(sys.argv[4])
-C_D = float(sys.argv[5])
-v0 = float(sys.argv[6])
+rho = 0.79  # kg/m^3
+C_D = 1.2
+v_0 = 0
+g = 9.81  # m/s^2
+
+b = g*((rho/rho_b) - 1)
 
 
-"""def skrivUt(a, b, c, d, e, f, g, h):
-    print "rho_b = %g" % a
-    print "m = %g" % b
-    print "V = %g" % c
-    print "d = %g" % d
-    print "A = %g" % e
-    print "rho = %g" % f
-    print "C_D = %g" % g
-    print "v0 = %g" % h
-    return True
-
-test = skrivUt(rho_b, m, V, d, A, rho, C_D, v0)
-print ""
-print test
-"""    
-    
+soluton = solver(dt, rho_b, m, V, d, A, rho, C_D, v_0, g, v)

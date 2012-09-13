@@ -1,2 +1,8 @@
-% Exercise 24
+# Exercise 24
+
+def Stokes_const(d, mu, rho_b, V) :
+    return (3*pi*d*mu)/(rho_b*V)
+
+def quadratic_const(C_D, rho, A, rho_b, V) :
+    return (C_D*rho*A)/(2*rho_b*V)
 
