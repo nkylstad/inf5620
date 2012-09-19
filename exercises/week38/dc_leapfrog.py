@@ -10,16 +10,35 @@ def leapfrogSolver(I, a, b, T, dt):
     N = int(round(T/dt))
     T = N*dt
     u = zeros(N+1)
-    t = linspace(0, T, N+1)
 
     u[0] = I
-
     u[1] = u[0] + dt*(-a[0]*u[0] + b[0])
 
     for n in range(1, N):
         u[n+1] = u[n-1] + 2*dt*(-a[n]*u[n] + b[n])
     return u
 
+
+def conv_rate(t, I, a, T, u, u_e):
+    E_values = []
+    dt_values=[0.5, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005, 0.0025, 0.001]
+    e = u_e - u
+    for dt in dt_values:
+        E = sqrt(dt*sum(e**2))
+        E_values.append(E)
+        #print "e = %g" % sum(e**2)
+        #print "E = %g" % E
+
+    #print E_values
+
+    m = len(dt_values)
+    r = [log(E_values[i-1]/E_values[i])/log(dt_values[i-1]/dt_values[i]) for i in range(1, m, 1)]
+
+    print "Convergence rates:"
+    print ' '.join(['%.2f' % i for i in r])
+    return r
+    
+    
 
 
 def test_linear_solution():
@@ -58,9 +77,9 @@ def test_linear_solution():
     savefig('linear_test.png')
     show()
 
+    conv_rate(t, I, a, T, u_e, u)
 
 
-test_linear_solution()
 
 def test_case():
     """ Test case when u'(t) = -u(t) + 1, u(0) = 0"""
@@ -88,9 +107,11 @@ def test_case():
     legend(['numerical', 'exact'])
     savefig('case_test.png')
     show()
+    conv_rate(t, I, a, T, u_e, u)
+    
 
 
+test_linear_solution()
 test_case()
 
 
-    

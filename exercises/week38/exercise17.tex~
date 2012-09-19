@@ -1,0 +1,23 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{graphicx, float, setspace}
+
+
+% Title Page
+\title{Leapfrog :)}
+\author{}
+
+
+\begin{document}
+\maketitle
+
+\section{Exercise 17}
+
+We would like to analyze the leapfrog scheme using the exact solution of the discrete equations. We will look at the case where a is constant and $b = 0$. This gives the equation
+\begin{equation}
+ u'(t) = -au(t), \mspace(10mu) u(0) = I
+\end{equation}
+
+
+
+\end{document}
