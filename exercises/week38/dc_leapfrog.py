@@ -1,14 +1,12 @@
-﻿# Exercise 15
+# Exercise 15
 
 from numpy import *
-from matplotlib.pyplot import *
+#from matplotlib.pyplot import *
 
 
-def leapfrogSolver(I, a, b, T, dt):
+def leapfrogSolver(I, a, b, T, dt, N):
     """ Solve u'(t) = -a(t)u(t) + b(t), u(0) = I.
     Uses Forward Euler to compute u(1)."""
-    dt = float(dt)
-    N = int(round(T/dt))
     T = N*dt
     t = linspace(0, T, N+1)
     u = zeros(N+1)
@@ -19,7 +17,7 @@ def leapfrogSolver(I, a, b, T, dt):
     return u, t
 
 
-def exact_solution(t, I, a, b):
+def exact_solution(t, I, a, b, N):
     u_e = zeros(N+1)
     for i in range(N+1):
         u_e[i] = b[i]/a[i] + (I - (b[i]/a[i]))*exp(-a[i]*t[i])
@@ -92,29 +90,29 @@ def test_case():
     
 
 
-def explore(I, a, b, T, dt, makeplot=True): 
+def explore(I, a, b, T, dt, N, makeplot=True): 
     """ 
     Run a case with the solver, compute error measure, 
     and plot the numerical and exact solutions (if makeplot=True). 
     """ 
-    u, t = leapfrogSolver(I, a, b, T, dt) # Numerical solution
-    u_e = exact_solution(t, I, a) 
+    u, t = leapfrogSolver(I, a, b, T, dt, N) # Numerical solution
+    u_e = exact_solution(t, I, a, b, N) 
     e = u_e - u 
     E = sqrt(dt*sum(e**2)) 
     if makeplot: 
         figure() # create new plot 
         t_e = linspace(0, T, 1001) # fine mesh for u_e 
         u_e = exact_solution(t_e, I, a) 
-        plot(t, u, ’r--o’) # red dashes w/circles 
-        plot(t_e, u_e, ’b-’) # blue line for exact sol. 
-        legend([’numerical’, ’exact’]) 
-        xlabel(’t’) 
-        ylabel(’u’) 
-        title(’theta=%g, dt=%g’ % (theta, dt)) 
-        theta2name = {0: ’FE’, 1: ’BE’, 0.5: ’CN’} 
-        savefig(’%s_%g.png’ % (theta2name[theta], dt)) 
-        savefig(’%s_%g.pdf’ % (theta2name[theta], dt)) 
-        savefig(’%s_%g.eps’ % (theta2name[theta], dt)) 
+        plot(t, u, 'r--o') # red dashes w/circles 
+        plot(t_e, u_e, 'b-') # blue line for exact sol. 
+        legend(['numerical', 'exact']) 
+        xlabel('t') 
+        ylabel('u') 
+        title('theta=%g, dt=%g' % (theta, dt)) 
+        theta2name = {0: 'FE', 1: 'BE', 0.5: 'CN'} 
+        savefig('%s_%g.png' % (theta2name[theta], dt)) 
+        savefig('%s_%g.pdf' % (theta2name[theta], dt)) 
+        savefig('%s_%g.eps' % (theta2name[theta], dt)) 
         show() 
     return E 
 
@@ -122,15 +120,15 @@ def explore(I, a, b, T, dt, makeplot=True):
 def main(): 
     #I, a, T, makeplot, dt_values = read_command_line()
     
-    I = 0.1; dt = 0.1; T = 4; N = int(T/dt)
+    I = 0.1; dt = 0.1; T = 4; N = int(round(T/dt))
     a = ones(N+1)
-    n = ones(N+1)
+    b = ones(N+1)
 
-    dt_values = [0.5, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005, 0.0025, 0.001]
+    dt_values = [0.5, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005, 0.0025, 0.001, 0.0005, 0.00025, 0.0001, 0.00001]
     
     E_values = [] 
     for dt in dt_values: 
-        E = explore(I, a, b, T, dt, makeplot=False) 
+        E = explore(I, a, b, T, dt, N, makeplot=False) 
         E_values.append(E)
     # Compute convergence rates 
     m = len(dt_values) 
