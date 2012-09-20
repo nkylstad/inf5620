@@ -67,6 +67,7 @@ def test_case():
 
     plot(t, u, 'r--')
     plot (t, u_e, 'b-')
+    legend(['numerical', 'exact'], 'best')
     xlabel('t')
     ylabel('u(t)')
     title('Leapfrog scheme for a=b=1')
