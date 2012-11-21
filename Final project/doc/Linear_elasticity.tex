@@ -1,0 +1,232 @@
+%%
+%% Automatically generated ptex2tex (extended LaTeX) file
+%% from Doconce source
+%% http://code.google.com/p/doconce/
+%%
+
+
+
+
+%-------------------------- begin preamble --------------------------
+\documentclass[twoside]{article}
+
+
+
+\usepackage{relsize,epsfig,makeidx,amsmath,amsfonts,fullpage,color,mdframed}
+\usepackage[latin1]{inputenc}
+%\usepackage{minted} % packages needed for verbatim environments
+
+
+% Hyperlinks in PDF:
+\usepackage[%
+    colorlinks=true,
+    linkcolor=black,
+    %linkcolor=blue,
+    citecolor=black,
+    filecolor=black,
+    %filecolor=blue,
+    urlcolor=black,
+    pdfmenubar=true,
+    pdftoolbar=true,
+    urlcolor=black,
+    %urlcolor=blue,
+    bookmarksdepth=3   % Uncomment (and tweak) for PDF bookmarks with more levels than the TOC
+            ]{hyperref}
+%\hyperbaseurl{}   % hyperlinks are relative to this root
+
+
+% Tricks for having figures close to where they are defined:
+% 1. define less restrictive rules for where to put figures
+\setcounter{topnumber}{2}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.15}
+\renewcommand{\floatpagefraction}{0.7}
+% 2. ensure all figures are flushed before next section
+\usepackage[section]{placeins}
+% 3. enable begin{figure}[H] (often leads to ugly pagebreaks)
+%\usepackage{float}\restylefloat{figure}
+\usepackage{parskip}
+
+\newcommand{\inlinecomment}[2]{  ({\bf #1}: \emph{#2})  }
+%\newcommand{\inlinecomment}[2]{}  % turn off inline comments
+\newcommand{\dutt}{\frac{\partial^2 \mathbf{u}}{\partial t^2}}
+\newcommand{\duxx}{\frac{\partial^2 \mathbf{u}}{\partial x^2}}
+\newcommand{\dut}{\frac{\partial \mathbf{u}}{\partial t}}
+\newcommand{\dux}{\frac{\partial \mathbf{u}}{\partial x}}
+\newcommand{\dtt}{\Delta t^2}
+\newcommand{\dxx}{\Delta x^2}
+\newcommand{\dt}{\Delta t}
+\newcommand{\dx}{\Delta x}
+\newcommand{\wt}{\tilde{\omega}}
+\newcommand{\unp}{\mathbf{u^{n+1}}}
+\newcommand{\un}{\mathbf{u^{n}}}
+\newcommand{\unm}{\mathbf{u^{n-1}}}
+\newcommand{\io}{\int\limits_\Omega}
+\newcommand{\sumjn}{\sum^N_j}
+
+% insert custom LaTeX commands...
+
+\makeindex
+
+\begin{document}
+%-------------------------- end preamble --------------------------
+
+
+
+
+
+% ----------------- title -------------------------
+
+\begin{center}
+{\LARGE\bf Linear elasticity - Finte elements}
+\end{center}
+
+
+\vspace{0.5cm}
+\begin{center}
+% List of all institutions:
+\centerline{INF5620 - Numerical methods for partial differential equations}
+\end{center}
+% ----------------- end author(s) -------------------------
+
+
+
+% ----------------- date -------------------------
+
+
+\begin{center}
+\today
+\end{center}
+
+\vspace{1cm}
+
+
+\section{Mathematical problem}
+We consider the general time-dependent equations for linear elasticity,
+
+\begin{align}
+\rho \mathbf{u}_{tt} &= \nabla\cdot\sigma + \rho \mathbf{b},     \label{eq:lin:elast}\\
+\sigma &= \sigma(\mathbf{u}) = 2\mu\epsilon(\mathbf{u}) + \lambda tr(\epsilon(\mathbf{u}))I     \label{sigma}\\
+\mathbf{u}(\mathbf{x}, 0) &= \mathbf{u_0}       \label{ic:u}\\
+\mathbf{u}_t(\mathbf{x},0) &= \mathbf{v_0}     \label{ic:ut}\\
+\mathbf{u}(\mathbf{0}, t) &= \mathbf{g}        \label{bc:dir}
+\end{align}
+
+where $\epsilon(\mathbf{u}) = \frac{1}{2}\left(\nabla \mathbf{u} + \nabla \mathbf{u}^T\right)$ is the strain tensor, $\mu$ and $\lambda$ are the Lam\'e parameters, and I is the identity tensor. We will consider Dirichlet boundary conditions, as shown in \eqref{bc:dir}. The initial conditions are given by \eqref{ic:u} and \eqref{ic:ut}.
+
+
+\section{Discretization}
+
+\subsection{Finite Difference in time}
+
+We begin by discretizing the time derivative, using a centered difference approximation:
+\begin{equation}
+\dutt  \approx \frac{\unp - 2 \un + \unm}{\dtt}
+\end{equation}
+
+We insert this approximation into \eqref{eq:lin:elast} and evaluate at time $t=t_n$:
+\begin{equation}
+\rho \frac{\unp - 2 \un + \unm}{\dtt} = \nabla\cdot\sigma(\mathbf{u}^n) + \rho \mathbf{b}^n
+\end{equation}
+
+For simplicity, we let $\sigma^n = \sigma(u^n)$. We solve for $\unp$:
+\begin{align}
+&\rho (\unp - 2 \un + \unm) = \dtt \nabla\cdot\sigma^n +  \rho \mathbf{b}^n  \nonumber\\
+&\unp = 2 \un - \unm + \frac{\dtt}{\rho} \nabla\cdot\sigma^n + \dtt \mathbf{b}^n
+\end{align}
+
+We now have a discretization in time.
+
+
+\subsection{Finite Elements in space}
+We use a Galerkin method to find the variational form of \eqref{eq:lin:elast}, by introducing a test function $\mathbf{v} \in V$:
+
+\begin{equation}
+\io \unp \cdot \mathbf{v} dx = 2\io \un \cdot \mathbf{v} dx - \io \unm \cdot \mathbf{v} dx + \frac{\dtt}{\rho} \io (\nabla\cdot\sigma^n) \cdot 
+\mathbf{v} dx + \dtt \io \mathbf{b}^n \cdot \mathbf{v} dx
+\end{equation}
+
+We need to integrate the $\io (\nabla\cdot\sigma^n) \cdot v dx$ -term by parts, as it contains second derivatives. We get
+\begin{equation}
+\io (\nabla\cdot\sigma^n) \cdot \mathbf{v} dx = - \io \sigma^n : \nabla \mathbf{v} dx + \int\limits_{\partial\Omega} (\sigma^n\cdot \mathbf{n})\cdot \mathbf{v} ds
+\end{equation}
+where $\sigma^n : \nabla \mathbf{v}$ is a tensor inner product. The term $\int\limits_{\partial\Omega} (\sigma^n\cdot n)\cdot \mathbf{v} ds$
+vanishes because of the Dirichlet boundary condition. We are now left with 
+
+\begin{equation}
+\io \unp \cdot \mathbf{v} dx = \io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io \sigma^n : \nabla \mathbf{v} dx
+\label{gen:scheme}
+\end{equation}
+
+This is the general scheme. We need to implement the initial conditions in order to get a special scheme for the first time step:
+
+\begin{align}
+&\mathbf{u}^0 = \mathbf{u_0} \nonumber\\
+&\mathbf{u}_t(\mathbf{x},0) = \mathbf{v_0} \Rightarrow \frac{\unp - \unm}{2\dt}\approx \mathbf{v_0}\nonumber\\
+&\Rightarrow \mathbf{u}^{-1} = \mathbf{u}^{1} - 2\dt \mathbf{v_0}\nonumber
+\end{align}
+
+We put this expression for $\mathbf{u}^{-1}$ into \eqref{gen:scheme}:
+
+\begin{align}
+2\io \mathbf{u}^{1} \cdot \mathbf{v} dx &= \io (2\mathbf{u}^{0} - 2\dt \mathbf{v_0}  + \dtt \mathbf{b}^0) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io \sigma^0 : \nabla \mathbf{v} dx\nonumber\\
+\io \mathbf{u}^{1} \cdot \mathbf{v} dx &= \io (\mathbf{u_0} - \dt \mathbf{v_0}  + \frac{\dtt}{2} \mathbf{b}^0) \cdot \mathbf{v} dx - \frac{\dtt}{2\rho} \io \sigma(\mathbf{u}_0) : \nabla \mathbf{v} dx
+\label{first:step}
+\end{align}
+
+We are now ready to express \eqref{eq:lin:elast} as a variational problem. We let $u=\unp$ represent the unknown at the next time level:
+\vspace{0.5cm}
+\begin{mdframed}
+\begin{align}
+&a_0(\mathbf{u},\mathbf{v}) = \io \mathbf{u} \cdot \mathbf{v} dx \\
+&L_0(\mathbf{v}) = \io \mathbf{u_0} \cdot \mathbf{v} dx \\
+&a_1(\mathbf{u},\mathbf{v}) = \io \mathbf{u} \cdot \mathbf{v} dx \\
+&L_1(\mathbf{v}) = \io (\mathbf{u_0} - \dt \mathbf{v}_0  + \frac{\dtt}{2} \mathbf{b}^0) \cdot \mathbf{v} dx - \frac{\dtt}{2\rho} \io \sigma(\mathbf{u_0}) : \nabla \mathbf{v} dx \\
+&a(\mathbf{u},\mathbf{v}) = \io \mathbf{u} \cdot \mathbf{v} dx \\
+&L(\mathbf{v}) = \io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io \sigma^n : \nabla \mathbf{v} dx\\
+&L(\mathbf{v}) =  \io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io (2\mu\epsilon(\mathbf{u}) + \lambda tr(\epsilon(\mathbf{u}))I) : \nabla \mathbf{v} dx
+\end{align}
+\end{mdframed}
+
+With this formulation, we could implement the problem in FEniCS.
+
+However, it is possible to go further, in order to make the implementation more efficient. We introduce the approximations
+
+\begin{align}
+\unp &\approx \sumjn c_j^{n+1}\Phi_j \\
+\un &\approx \sumjn c_j^{n}\Phi_j \\
+\unm &\approx \sumjn c_j^{n-1}\Phi_j \\
+\mathbf{b}^n &\approx \sumjn b_j^{n}\Phi_j
+\end{align}
+
+where $\Phi_j = (\phi_1,...,\phi_d)^T$ are prescribed basis functions, and $c_j^{n}$ and $b_j^{n}$ are coefficients to be determined. Let $\mathbf{v} = \Phi_i$.
+
+\begin{equation}
+\io\unp \cdot \mathbf{v} dx = \io\left(\sumjn c_j^{n+1}\Phi_j\right)\cdot\Phi_i dx = \sumjn\left(\io \Phi_i\cdot\Phi_j dx\right)c_j^{n+1}
+\end{equation}
+
+\begin{align}
+\io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx &= \io \left(2 \sumjn c_j^{n}\Phi_j - \sumjn c_j^{n-1}\Phi_j + \dtt \sumjn b_j^{n}\Phi_j \right) \cdot\Phi_i dx\\
+&= 2 \sumjn \left(\io \Phi_i \cdot\Phi_j dx\right)c_j^{n} - \sumjn \left(\io \Phi_i\cdot \Phi_j dx\right)c_j^{n-1} + \dtt \sumjn \left(\io \Phi_i \cdot\Phi_j dx\right)b_j^{n}
+\end{align}
+
+\begin{align*}
+\io \sigma^n : \nabla \mathbf{v} dx &= \io \sigma(\sumjn c_j^{n}\Phi_j) : \nabla \Phi_i dx \\
+&= \sumjn \left(\io \sigma(\Phi_j) : \nabla\Phi_i dx\right)c_j^{n}
+\end{align*}
+
+We define the matrices $M$ and $K$, with elements $M_{i,j} = \io \Phi_i \cdot \Phi_j dx$ and $K_{i,j} = \io \sigma(\Phi_j) : \nabla\Phi_i dx$. Since the coefficients $c^{n}$ are the nodal values of $\mathbf{u}$ at time $t=t^n$, we get the linear system
+
+\begin{align}
+M\mathbf{u}^{n+1} &= 2 M\mathbf{u}^{n} - M\mathbf{u}^{n-1} - \frac{\dtt}{\rho}K\mathbf{u}^{n} + \dtt M\mathbf{b}^n   \\
+&= \left(2 M - \frac{\dtt}{\rho}K\right)\mathbf{u}^n - M\mathbf{u}^{n-1} + \dtt M\mathbf{b}^n
+\end{align}
+
+where $\mathbf{u}^{n}$ and $\mathbf{u}^{n-1}$ are known.
+
+
+
+\end{document}
