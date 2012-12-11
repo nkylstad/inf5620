@@ -1,0 +1,1101 @@
+%%
+%% Automatically generated ptex2tex (extended LaTeX) file
+%% from Doconce source
+%% http://code.google.com/p/doconce/
+%%
+
+
+
+
+%-------------------------- begin preamble --------------------------
+\documentclass[twoside]{article}
+
+
+
+\usepackage{relsize,epsfig,makeidx,amsmath,amsfonts,fullpage,color,mdframed,caption}
+\usepackage[latin1]{inputenc}
+\usepackage{minted} % packages needed for verbatim environments
+\usepackage{subcaption}
+
+% Hyperlinks in PDF:
+\usepackage[%
+    colorlinks=true,
+    linkcolor=black,
+    %linkcolor=blue,
+    citecolor=black,
+    filecolor=black,
+    %filecolor=blue,
+    urlcolor=black,
+    pdfmenubar=true,
+    pdftoolbar=true,
+    urlcolor=black,
+    %urlcolor=blue,
+    bookmarksdepth=3   % Uncomment (and tweak) for PDF bookmarks with more levels than the TOC
+            ]{hyperref}
+%\hyperbaseurl{}   % hyperlinks are relative to this root
+
+
+% Tricks for having figures close to where they are defined:
+% 1. define less restrictive rules for where to put figures
+\setcounter{topnumber}{2}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.15}
+\renewcommand{\floatpagefraction}{0.7}
+% 2. ensure all figures are flushed before next section
+\usepackage[section]{placeins}
+% 3. enable begin{figure}[H] (often leads to ugly pagebreaks)
+%\usepackage{float}\restylefloat{figure}
+\usepackage{parskip}
+
+\newcommand{\inlinecomment}[2]{  ({\bf #1}: \emph{#2})  }
+%\newcommand{\inlinecomment}[2]{}  % turn off inline comments
+\newcommand{\dutt}{\frac{\partial^2 \mathbf{u}}{\partial t^2}}
+\newcommand{\duxx}{\frac{\partial^2 \mathbf{u}}{\partial x^2}}
+\newcommand{\dut}{\frac{\partial \mathbf{u}}{\partial t}}
+\newcommand{\dux}{\frac{\partial \mathbf{u}}{\partial x}}
+\newcommand{\dtt}{\Delta t^2}
+\newcommand{\dxx}{\Delta x^2}
+\newcommand{\dt}{\Delta t}
+\newcommand{\dx}{\Delta x}
+\newcommand{\wt}{\tilde{\omega}}
+\newcommand{\unp}{\mathbf{u^{n+1}}}
+\newcommand{\un}{\mathbf{u^{n}}}
+\newcommand{\unm}{\mathbf{u^{n-1}}}
+\newcommand{\io}{\int\limits_\Omega}
+\newcommand{\sumjn}{\sum^N_j}
+
+% insert custom LaTeX commands...
+
+\makeindex
+
+\begin{document}
+%-------------------------- end preamble --------------------------
+
+
+
+
+
+% ----------------- title -------------------------
+
+\begin{center}
+{\LARGE\bf INF5620 Final Project}\\
+{\LARGE\bf Linear elasticity - Finte elements}
+\end{center}
+
+
+
+
+% ----------------- author(s) -------------------------
+
+\begin{center}
+{\bf Nina Kristine Kylstad (\texttt{ninakky@student.matnat.uio.no})} \\ [0mm]
+\end{center}
+
+\vspace{0.5cm}
+\begin{center}
+% List of all institutions:
+\centerline{INF5620 - Numerical methods for partial differential equations}
+\end{center}
+% ----------------- end author(s) -------------------------
+
+
+
+% ----------------- date -------------------------
+
+
+\begin{center}
+November 14, 2012
+\end{center}
+
+\vspace{1cm}
+
+
+\begin{abstract}
+This report investigates the time-dependent equations
+for linear elasticity, and solving them using finite element 
+methods.
+\end{abstract}
+
+\tableofcontents
+
+
+
+% Section with multi-line equation.
+
+\section{Mathematical problem}
+We consider the general time-dependent equations for linear elasticity,
+
+\begin{align}
+\rho \mathbf{u}_{tt}(\mathbf{x} &= \nabla\cdot\sigma + \rho \mathbf{b},  &\mathbf{x}\in\Omega, t\in (0, T],     \label{eq:lin:elast}\\
+\sigma &= \sigma(\mathbf{u}) = 2\mu\epsilon(\mathbf{u}) + \lambda tr(\epsilon(\mathbf{u}))I   ,  \label{sigma}\\
+\mathbf{u}(\mathbf{x}, 0) &= \mathbf{u_0},  &\mathbf{x}\in\Omega,   \label{ic:u}\\
+\mathbf{u}_t(\mathbf{x},0) &= \mathbf{v_0}, &\mathbf{x}\in\Omega,   \label{ic:ut}\\
+\mathbf{u}(\mathbf{x}, t) &= \mathbf{g}, &\mathbf{x}\in\partial\Omega_D, t\in (0, T],          \label{bc:dir}\\
+\sigma\cdot\mathbf{n} &= 0, &\mathbf{x}\in\partial\Omega_N, t\in (0, T],          \label{bc:neu}
+\end{align}
+
+where $\epsilon(\mathbf{u}) = \frac{1}{2}\left(\nabla \mathbf{u} + \nabla \mathbf{u}^T\right)$ is the strain tensor, $\mu$ and $\lambda$ are the Lam\'e parameters, and I is the identity tensor. The initial conditions are given by \eqref{ic:u} and \eqref{ic:ut}. We will consider Dirichlet and Neumann boundary conditions, as shown in \eqref{bc:dir} and \eqref{bc:neu} respectively. 
+
+
+% Section with discretization of the equation
+\section{Discretization}
+
+
+% Subsection with FD
+\subsection{Finite Difference in time}
+
+We begin by discretizing the time derivative, using a centered difference approximation:
+\begin{equation}
+\dutt  \approx \frac{\unp - 2 \un + \unm}{\dtt}
+\end{equation}
+
+We insert this approximation into \eqref{eq:lin:elast} and evaluate at time $t=t_n$:
+\begin{equation}
+\rho \frac{\unp - 2 \un + \unm}{\dtt} = \nabla\cdot\sigma(\mathbf{u}^n) + \rho \mathbf{b}^n
+\end{equation}
+
+For simplicity, we let $\sigma^n = \sigma(u^n)$. We solve for $\unp$:
+\begin{align}
+&\rho (\unp - 2 \un + \unm) = \dtt \nabla\cdot\sigma^n +  \rho \mathbf{b}^n  \nonumber\\
+&\unp = 2 \un - \unm + \frac{\dtt}{\rho} \nabla\cdot\sigma^n + \dtt \mathbf{b}^n
+\end{align}
+
+We now have a discretization in time.
+
+
+% Subsection with FEM
+\subsection{Finite Elements in space}
+\label{section:fem}
+We use a Galerkin method to find the variational form of \eqref{eq:lin:elast}, by introducing a test function $\mathbf{v} \in V$:
+
+\begin{equation}
+\io \unp \cdot \mathbf{v} dx = 2\io \un \cdot \mathbf{v} dx - \io \unm \cdot \mathbf{v} dx + \frac{\dtt}{\rho} \io (\nabla\cdot\sigma^n) \cdot 
+\mathbf{v} dx + \dtt \io \mathbf{b}^n \cdot \mathbf{v} dx
+\end{equation}
+
+We need to integrate the $\io (\nabla\cdot\sigma^n) \cdot v dx$ -term by parts, as it contains second derivatives. We get
+\begin{equation}
+\io (\nabla\cdot\sigma^n) \cdot \mathbf{v} dx = - \io \sigma^n : \nabla \mathbf{v} dx + \int\limits_{\partial\Omega} (\sigma^n\cdot \mathbf{n})\cdot \mathbf{v} ds
+\end{equation}
+where $\sigma^n : \nabla \mathbf{v}$ is a tensor inner product. The term  $\int\limits_{\partial\Omega} (\sigma^n\cdot \mathbf{n})\cdot \mathbf{v} ds$ vanishes for the Neumann boundary condition $\sigma\cdot\mathbf{n} = 0$, and for constant Dirichlet boundary conditions. We will leave out the term in the rest of the calculations. If needed, it can be implemented at a later stage.
+
+We now have
+
+\begin{equation}
+\io \unp \cdot \mathbf{v} dx = \io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io \sigma^n : \nabla \mathbf{v} dx 
+\label{gen:scheme}
+\end{equation}
+
+This is the general scheme. We need to implement the initial conditions in order to get a special scheme for the first time step:
+
+\begin{align}
+&\mathbf{u}^0 = \mathbf{u_0} \nonumber\\
+&\mathbf{u}_t(\mathbf{x},0) = \mathbf{v_0} \Rightarrow \frac{\unp - \unm}{2\dt}\approx \mathbf{v_0}\nonumber\\
+&\Rightarrow \mathbf{u}^{-1} = \mathbf{u}^{1} - 2\dt \mathbf{v_0}\nonumber
+\end{align}
+
+We put this expression for $\mathbf{u}^{-1}$ into \eqref{gen:scheme}:
+
+\begin{align}
+2\io \mathbf{u}^{1} \cdot \mathbf{v} dx &= \io (2\mathbf{u}^{0} + 2\dt \mathbf{v_0}  + \dtt \mathbf{b}^0) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io \sigma^0 : \nabla \mathbf{v} dx\nonumber\\
+\io \mathbf{u}^{1} \cdot \mathbf{v} dx &= \io (\mathbf{u_0} + \dt \mathbf{v_0}  + \frac{\dtt}{2} \mathbf{b}^0) \cdot \mathbf{v} dx - \frac{\dtt}{2\rho} \io \sigma(\mathbf{u}_0) : \nabla \mathbf{v} dx
+\label{first:step}
+\end{align}
+
+We are now ready to express \eqref{eq:lin:elast} as a variational problem. We let $u=\unp$ represent the unknown at the next time level:
+\vspace{0.5cm}
+\begin{mdframed}
+\begin{align}
+&a_0(\mathbf{u},\mathbf{v}) = \io \mathbf{u} \cdot \mathbf{v} dx \label{a:0}\\
+&L_0(\mathbf{v}) = \io \mathbf{u_0} \cdot \mathbf{v} dx \\
+&a_1(\mathbf{u},\mathbf{v}) = \io \mathbf{u} \cdot \mathbf{v} dx \\
+&L_1(\mathbf{v}) = \io (\mathbf{u_0} + \dt \mathbf{v}_0  + \frac{\dtt}{2} \mathbf{b}^0) \cdot \mathbf{v} dx - \frac{\dtt}{2\rho} \io \sigma(\mathbf{u_0}) : \nabla \mathbf{v} dx \\
+&a(\mathbf{u},\mathbf{v}) = \io \mathbf{u} \cdot \mathbf{v} dx \\
+&L(\mathbf{v}) = \io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io \sigma^n : \nabla \mathbf{v} dx \label{L(v)}\\
+&L(\mathbf{v}) =  \io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx - \frac{\dtt}{\rho} \io (2\mu\epsilon(\mathbf{u}) + \lambda tr(\epsilon(\mathbf{u}))I) : \nabla \mathbf{v} dx
+\end{align}
+\end{mdframed}
+
+With this formulation, we could implement the problem in FEniCS.
+
+However, it is possible to go further, in order to make the implementation more efficient. We introduce the approximations
+
+\begin{align}
+\unp &\approx \sumjn \mathbf{c}_j^{n+1}\phi_j \\
+\un &\approx \sumjn \mathbf{c}_j^{n}\phi_j \\
+\unm &\approx \sumjn \mathbf{c}j^{n-1}\phi_j \\
+\mathbf{b}^n &\approx \sumjn \mathbf{b}_j^{n}\phi_j
+\end{align}
+
+where $\phi_j $ are prescribed basis functions, and $c_j^{n}$ and $b_j^{n}$ are coefficient vectors to be determined. Let $\mathbf{v} = \phi_i$.
+
+\begin{equation}
+\io\unp \cdot \mathbf{v} dx = \io\left(\sumjn \mathbf{c}_j^{n+1}\phi_j\right)\phi_i dx = \sumjn\left(\io \phi_i \phi_j dx\right)\mathbf{c}_j^{n+1}
+\end{equation}
+
+\begin{align}
+\io (2\un - \unm  + \dtt \mathbf{b}^n) \cdot \mathbf{v} dx &= \io \left(2 \sumjn \mathbf{c}_j^{n}\phi_j - \sumjn \mathbf{c}_j^{n-1}\phi_j + \dtt \sumjn \mathbf{b}_j^{n}\phi_j \right)  \phi_i dx\\
+&= 2 \sumjn \left(\io \phi_i  \phi_j dx\right)\mathbf{c}_j^{n} - \sumjn \left(\io \phi_i  \phi_j dx\right)\mathbf{c}_j^{n-1} + \dtt \sumjn \left(\io \phi_i  \phi_j dx\right)\mathbf{b}_j^{n}
+\end{align}
+
+\begin{align*}
+\io \sigma^n : \nabla \mathbf{v} dx &= \io \sigma(\sumjn \mathbf{c}_j^{n}\phi_j) : \nabla \phi_i dx \\
+&= \sumjn \left(\io \sigma(\phi_j) : \nabla\phi_i dx\right)\mathbf{c}_j^{n}
+\end{align*}
+
+We define the matrices $M$ and $K$, with elements $M_{i,j} = \io \phi_i   \phi_j dx$ and $K_{i,j} = \io \sigma(\phi_j) : \nabla\phi_i dx$. Since the coefficient vectors $\mathbf{c}^{n}$ are the nodal values of $\mathbf{u}$ at time $t=t^n$, we get the linear system
+
+\begin{align}
+M\mathbf{u}^{n+1} &= 2 M\mathbf{u}^{n} - M\mathbf{u}^{n-1} - \frac{\dtt}{\rho}K\mathbf{u}^{n} + \dtt M\mathbf{b}^n   \label{matrix:equation}\\
+&= \left(2 M - \frac{\dtt}{\rho}K\right)\mathbf{u}^n - M\mathbf{u}^{n-1} + \dtt M\mathbf{b}^n
+\end{align}
+
+where $\mathbf{u}^{n}$ and $\mathbf{u}^{n-1}$ are known.
+
+
+
+
+\section{Implementation}
+
+\subsection{Verification}
+\subsubsection{Stationary case}
+
+We would like to make sure that the implementation of the scheme above is correct. After the first implementation of the scheme, the solution seemed to increase exponentially for each time step, which is not something we want. We therefore take a step back and look at the stationary case, where we know we have an implementation that works quite well. We can then try to come up with the correct implementation of the boundary conditions, and then apply this to the time-dependent case. 
+
+We begin by looking at a 3 dimensional (square) elastic rod of length L, and apply the following boundary conditions:
+\begin{itemize}
+\item $u_x = 0$ for $x = 0$,
+\item $u_x = \alpha L$ for $x = L$,
+\item $\sigma\cdot\mathbf{n} = 0$ for all other surfaces.
+\end{itemize}
+
+We choose the displacement vector given by
+\begin{equation}
+u = \left(\begin{matrix}
+u_x(x)\\
+u_y(y)\\
+u_z(z)
+\end{matrix}\right) 
+= 
+\left(\begin{matrix}
+\alpha x\\
+\gamma y\\
+\gamma z
+\end{matrix}\right) \label{u:vector}
+\end{equation}
+This means that we have a rod that has a displacement $\alpha$ (an extension) in the x-direction, and displacement $\gamma$ (a contraction) in the y- and z-directions. The chosen displacement vector satisfies the boundary condition requirements, and we therefore let the exact solution $\mathbf{u}$ be the boundary conditions in the implementation. However, the boundary conditions will then not be constant, but dependent on space. Because of this, We must now include the $\int\limits_{\partial\Omega} (\sigma^n\cdot \mathbf{n})\cdot \mathbf{v} ds$ - term. Although the derivation of the stationary scheme is not shown here, the calculations are the same (excluding the derivatives in time). We can therefore simply add the new term to the right-hand-side, or $L(v)$, as done in the implementation of the problem in \ref{stationary:code}.
+
+The solution we are looking for with these boundary conditions gives $\sigma$ on the form
+\begin{equation}
+\sigma = \left(\begin{matrix}
+\beta & 0 & 0\\
+0 & 0 & 0\\
+0 & 0 & 0\\ 
+\end{matrix}\right)
+\label{sigma:stat}
+\end{equation}
+where $\beta$ is some linear function of $\alpha$. That is, if we double $\alpha$, we should also see that $\beta$ doubles.
+
+We can calculate what $\sigma$ will be from \eqref{u:vector}:
+\begin{align*}
+\nabla u &= \left(\begin{matrix}
+u_{1,x} & u_{1,y} & u_{1,x}\\
+u_{2,x} & u_{2,y} & u_{2,x}\\
+u_{3,x} & u_{3,y} & u_{3,x}
+\end{matrix}\right)
+=
+\left(\begin{matrix}
+\alpha & 0 & 0\\
+0 &  \gamma & 0\\
+0 & 0 &  \gamma
+\end{matrix}\right)\\
+(\nabla u)^T &= \nabla u\\
+&\Rightarrow \epsilon = \nabla u\\
+\sigma(u) &= 
+\left(\begin{matrix}
+2\mu\alpha & 0 & 0\\
+0 &  2\mu\gamma & 0\\
+0 & 0 &  2\mu\gamma
+\end{matrix}\right)
++
+\left(\begin{matrix}
+\lambda(\alpha + 2\gamma) & 0 & 0\\
+0 &  \lambda(\alpha + 2\gamma) & 0\\
+0 & 0 &  \lambda(\alpha + 2\gamma)
+\end{matrix}\right)\\
+&=
+\left(\begin{matrix}
+2\gamma\lambda + \alpha(\lambda + \mu) & 0 & 0\\
+0 &  \alpha\lambda + 2\gamma(\lambda + \mu) & 0\\
+0 & 0 &  \alpha\lambda + 2\gamma(\lambda + \mu)
+\end{matrix}\right)\\
+\end{align*}
+
+
+As we are looking for a $\sigma$ on the form \eqref{sigma:stat}, we must have
+\begin{align}
+\alpha\lambda + 2\gamma(\lambda + \mu) &= 0\\
+\Rightarrow \gamma &= -\frac{\alpha\lambda}{2(\lambda + \mu)}
+\end{align}
+
+The implementation of this stationary problem is given in \ref{stationary:code}.
+
+The output of this program gives that $\sigma$ has the size (number of data points) $6561$. This is exactly what we would expect from P1 elements on \texttt{UnitCube(8,8,8)}, as we have $9\times9\times9$ points on the cube, and each point creates a $\sigma$-tensor of size $3\times3$.
+
+The output from printing the values of $\sigma\_$ are slightly more difficult to interpret, as it is not entirely clear how $\sigma\_$ is formatted. However, with some testing, it can be seen that the values $\sigma\_[0:729]$ are all significantly larger than 0. In fact, with $\alpha=1.0$, these values are all very close to $1$. The rest of the values, $\sigma\_[730:-1]$ are very small, in the order of magnitude of $10^{-14}$ and smaller. This is significant because there are $9\times9\times9 = 729$  $\sigma$-tensors, one for each point in the mesh. The results from the program suggest that when performing the print-command \texttt{sigma\_.vector().array()}, we get the first element from each $\sigma$, followed by the second element and so on. 
+If this is correct, then we get $\sigma$ very close to the form we wanted. If we take $\sigma\_[i\times729]$ for i=0,\ldots, 8 and place those values in a matrix, we get:
+
+\begin{equation*}
+\left(\begin{matrix}
+1.00000299e+00  & 1.34341531e-15 &  1.28156902e-15\\
+1.34341531e-15  & 8.49581088e-16  & 1.12541265e-17\\
+1.28156902e-15  & 2.27396678e-17  & 8.58702048e-16
+\end{matrix}\right)
+\end{equation*}
+
+If we double the value of $\alpha$ to $\alpha = 2.0$, we get
+\begin{equation*}
+\left(\begin{matrix}
+2.00000598e+00  & 4.12999178e-15  & 2.72159629e-16\\
+7.33314564e-15  & 1.39556359e-15  & -3.42130794e-17\\
+2.07890357e-16  &  -6.51129139e-16  & -1.87653016e-15
+\end{matrix}\right)
+\end{equation*}
+
+We see that the $[0,0]$-element has exactly doubled, while the rest of the elements are very close to $0$. It would therefore appear that the stationary case works the way it should.
+
+
+
+
+
+\subsubsection{Time dependent case}
+
+We can now extend the stationary case (which seems to be working correctly) to the time dependent case. The code for this is included in \ref{time:dependent:code}. 
+
+The changes from the stationary case are as follows:
+\begin{itemize}
+\item Include values of the displacement for the previous two time steps as known functions.
+\item Implement initial conditions
+\item Use initial conditions to implement the special first step
+\item Update the displacement for every time step
+\item Update boundary conditions and source term for every time step
+\end{itemize}
+
+
+The time-dependent case implements the variational forms in \eqref{a:0} - \eqref{L(v)}. In the same way as in the stationary case, we must add the $\int\limits_{\partial\Omega} (\sigma^n\cdot \mathbf{n})\cdot \mathbf{v} ds$ - term to the variational form before implementation. Again we can simply add the term to $L(v)$ (and $L_1(v)$). However, we need to remember the factors it would have been multiplied by in the variational form - these are the same factors as for the $\int\limits_{\Omega} \sigma^n: \nabla\mathbf{v}dx$ - term.
+
+Running the program with the same type of boundary conditions as in the stationary case (i.e. a rod that is stretched in the x-direction, held at $x=0$, and with free displacement in the y- and z-directions), we get the following plots for $\lambda=1.0$, $\mu=0.1$:
+
+\begin{figure}[h!]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0000.png}
+                \caption{t=0.2}
+                \label{t:0.2}
+        \end{subfigure}
+        \quad
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0001.png}
+                \caption{t=0.3}
+                \label{t:0.3}
+        \end{subfigure}    
+        \quad
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0002.png}
+                \caption{t=0.4}
+                \label{t:0.4}
+        \end{subfigure}  
+        
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0003.png}
+                \caption{t=0.5}
+                \label{t:0.5}
+        \end{subfigure}        
+        \quad
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0004.png}
+                \caption{t=0.6}
+                \label{t:0.6}
+        \end{subfigure}  
+        \quad
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0005.png}
+                \caption{t=0.7}
+                \label{t:0.7}
+        \end{subfigure}   
+        \caption{Time-dependent case for a unit cube, $t \leq 1.0$}     
+\end{figure}
+
+As we can see from the plots \ref{t:0.2}-\ref{t:0.7}, the box is stretched in the x-direction, while the y-direction (and z-direction, which can't be seen in the plots) are allowed to contract. The box appears to be behaving in the way that we would expect. The error (when comparing to an exact solution) is very small, but is increasing slightly for each time step. 
+
+The problem appears when the program runs for times longer than $t=1.0$:
+
+\begin{figure}[h!]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0008.png}
+                \caption{t=1.0}
+                \label{t:1.0}
+        \end{subfigure}  
+        \quad
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0009.png}
+                \caption{t=1.1}
+                \label{t:1.1}
+        \end{subfigure}        
+     
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0010.png}
+                \caption{t=1.2}
+                \label{t:1.2}
+        \end{subfigure}  
+        \quad
+        \begin{subfigure}[b]{0.3\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{simulation0011.png}
+                \caption{t=1.3}
+                \label{t:1.3}
+        \end{subfigure}   
+        \caption{Time-dependent case for a unit cube, $t > 1.0$}     
+\end{figure}
+
+In figures \ref{t:1.2} and (especially) \ref{t:1.3} we see that the solution starts to become unstable. It is possible that there are some stability criteria, involving $dt, \lambda, \mu$ and possibly the spacial grid. Logically, it makes sense that there should be some stability criterion involving $\mu$ and $\lambda$; these are the elasticity parameters. If we consider an elastic band, then at some point it will be stretched so far that it breaks. At that point, the equations for linear elasticity do not apply. Perhaps that is what is happening in this case.
+We can also look at output from the program that comes from calculating the error (the difference between the exact and numerical solution). The output is as follows:
+
+\begin{verbatim}
+Solving linear variational problem.
+first step:  2.42861286637e-17
+t= 0.2
+Solving linear variational problem.
+error:  1.35308431126e-16
+t= 0.3
+Solving linear variational problem.
+error:  1.68615121865e-15
+t= 0.4
+Solving linear variational problem.
+error:  2.16493489802e-14
+t= 0.5
+Solving linear variational problem.
+error:  3.49165141245e-13
+t= 0.6
+Solving linear variational problem.
+error:  7.0546624098e-12
+t= 0.7
+Solving linear variational problem.
+error:  1.42625244948e-10
+t= 0.8
+Solving linear variational problem.
+error:  3.16864245953e-09
+t= 0.9
+Solving linear variational problem.
+error:  7.03295270355e-08
+t= 1.0
+Solving linear variational problem.
+error:  1.56963559977e-06
+\end{verbatim}
+
+As we can see, the error is quite small, but it is increasing by a factor $10$ for every time step. Clearly, something is not working entirely as it should.
+
+
+
+\subsection{Speeding up the calculations}
+If we use the variational forms in \eqref{a:0} - \eqref{L(v)} directly in a program, as done in the program  \texttt{lin\_elast.py} in \ref{time:dependent:code}, then FEniCS takes care of the assembly of the element matrices within the command \newline\texttt{LinearVariationalProblem(a, L, u, bcs=bcs)}. This means that the program has to do a new assembly for each time step, and (especially in 3D) this can be quite time consuming.
+As implied at the end of section \ref{section:fem}, we do not have to use the variational forms (\eqref{a:0} - \eqref{L(v)}) directly.
+
+The first thing to look at is the form of $a(\mathbf{u}, \mathbf{v})$. It is the same for each time step, including the first one. By using the \texttt{LinearVariationalProblem()} - function in \texttt{dolfin}, we assemble the element matrices for every time step. It is unnecessary to do this for every time step, as $a(\mathbf{u}, \mathbf{v})$ does not depend on time. The associated matrix $A$ will therefore also be independent of time, and can be computed before the time loop. We then use this matrix $A$ to solve the equation $A\mathbf{u} = \mathbf{b}$, where $\mathbf{b}$, corresponding to $L$, has to be computed for each new time level. The file  \texttt{lin\_elast\_assemble.py} with source code for this is shown in \ref{time:dependent:assembly:code}
+
+To speed the calculations up even further, we can use the matrix equations derived in the end of section \ref{section:fem}. However, we need to do something about the implementation of the boundary conditions, as we do not have this in the matrix equations yet. We then get two $K$-matrices, $K_1$ and $K_2$, where $K_1_{i,j}  = \io \sigma(\phi_j) : \nabla\phi_i dx$ and $K_2_{i,j} = \int\limits_{\partial\Omega} (\sigma(\phi_j)\cdot \mathbf{n}) \cdot \phi_i ds$. The matrix equation then becomes
+
+\begin{equation}
+M\mathbf{u}^{n+1} &= 2 M\mathbf{u}^{n} - M\mathbf{u}^{n-1} - \frac{\dtt}{\rho}K_1\mathbf{u}^{n} +  \frac{\dtt}{\rho}K_2\mathbf{u}^{n} + \dtt M\mathbf{b}^n \label{matrix:equation:new}
+\end{equation}
+The matrices $M$, $K_1$ and $K_2$ are independent of time in the same way as $a(\mathbf{u}, \mathbf{v})$, and therefore only have to be computed once. Here we also have to solve a matrix equation $A\mathbf{u} = \mathbf{b}$, where $A=M$ and $\mathbf{b}$ is the right-hand-side in \eqref{matrix:equation:new}. The file  \texttt{lin\_elast\_matrix.py} with the source code for this is shown in \ref{time:dependent:matrix:code}
+
+The time counter is placed around the time-loop, to see which method runs through the loop the fastest. The differences in time taken to run the simulation are shown in Table \ref{time:table}.
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\texttt{lin\_elast.py} & \texttt{lin\_elast\_assemble.py} & \texttt{lin\_elast\_matrix.py}  \\
+\hline 
+1.96 & 1.65 & 1.08\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Differences in time taken to run simulation}
+\label{time:table}
+\end{table}
+
+These differences are not exactly huge, but the mesh is quite coarse and might account for the fact that all the methods are relatively quick.
+
+Another thing that could be possible to investigate further is the method used to solve the linear system. The default method used here is LU-factorization. It could be interesting to see how much faster it would be to for example use a Krylov solver, or a lumped mass matrix. However, due to time constraints, this will not be investigated in this report.
+
+
+% Appendix
+\newpage
+\appendix
+\section{Source code}
+
+\subsection{Stationary case: \texttt{lin\_elast\_stationary.py}}
+\label{stationary:code}
+
+\begin{minted}[fontsize=\fontsize{9pt}{9pt},linenos=false,mathescape,baselinestretch=1.0,fontfamily=tt,xleftmargin=7mm]{python}
+from dolfin import *
+import numpy as np
+
+# Create mesh
+mesh = UnitCube(8,8,8)
+
+# Create function space
+V = VectorFunctionSpace(mesh, "Lagrange", 1)
+
+# Create test and trial functions
+u = TrialFunction(V)
+v = TestFunction(V)
+n = FacetNormal(mesh)
+
+
+
+# Elasticity parameters
+E, nu = 1.0, 0.1
+mu, lmbda = E/(2.0*(1.0 + nu)), E*nu/((1.0 + nu)*(1.0 - 2.0*nu))
+rho = 1.0
+alpha = 1.0
+gamma = -lmbda*alpha/(2*(mu + lmbda))
+
+# Source term
+b = Expression(("0.0", "0.0", "0.0"))
+def eps(u):
+	return (1.0/2.0)*(nabla_grad(u) + transpose(nabla_grad(u)))
+
+# Stress
+def sigma(u):
+ 	return  2*mu*eps(u) + lmbda*tr(eps(u))*Identity(v.cell().d)
+
+
+# Governing balance equation
+F = inner(sigma(u), grad(v))*dx - rho*dot(b,v)*dx - dot(dot(sigma(u),n),v)*ds
+
+
+# Extract linear and bilinear forms from F
+a, L = lhs(F), rhs(F)
+
+# Boundary conditions
+def left_boundary(x, on_boundary):
+	tol = 1E-14
+	return on_boundary and abs(x[0]) < tol
+
+def right_boundary(x, on_boundary):
+	tol = 1E-14
+	return on_boundary and abs(x[0] - 1) < tol
+
+#gamma = 0.0
+c = Expression(("0.0","gamma*x[1]","gamma*x[2]"), gamma=gamma)
+r = Expression(("alpha","gamma*x[1]","gamma*x[2]"), alpha=alpha, gamma=gamma)
+bc_left = DirichletBC(V, c, left_boundary)
+bc_right = DirichletBC(V, r, right_boundary)
+bcs = [bc_left, bc_right]
+
+
+u = Function(V)
+problem = LinearVariationalProblem(a, L, u, bcs=bcs)
+solver = LinearVariationalSolver(problem)
+solver.solve()
+
+plot(u, mode="displacement", axes=True)
+plot(mesh)
+interactive()
+
+
+V_ = TensorFunctionSpace(mesh, "Lagrange", 1)
+sigma_ = project(sigma(u), V_)
+size = len(sigma_.vector().array())
+print size
+tol = 1E-14
+counter = 0
+for i in range(size-1):
+	if sigma_.vector().array()[i] <= tol:
+		counter += 1
+print counter
+
+test = np.zeros((3,3))
+test[0,0] = sigma_.vector().array()[0]
+test[0,1] = sigma_.vector().array()[729]
+test[0,2] = sigma_.vector().array()[1458]
+test[1,0] = sigma_.vector().array()[2187]
+test[1,1] = sigma_.vector().array()[2916]
+test[1,2] = sigma_.vector().array()[3655]
+test[2,0] = sigma_.vector().array()[4374]
+test[2,1] = sigma_.vector().array()[5103]
+test[2,2] = sigma_.vector().array()[5832]
+
+print test
+print sigma_.vector().array()[728]
+print sigma_.vector().array()[729]
+\end{minted}
+
+
+\subsection{Time dependent case}
+
+\subsubsection{ \texttt{lin\_elast.py}}
+\label{time:dependent:code}
+
+
+\begin{minted}[fontsize=\fontsize{9pt}{9pt},linenos=false,mathescape,baselinestretch=1.0,fontfamily=tt,xleftmargin=7mm]{python}
+from dolfin import *
+import numpy as np
+import time
+
+def run_simulation(version):
+	if version=="test-case":
+
+		# Create mesh
+		mesh = UnitCube(8,8,8)
+
+		# Create function space
+		V = VectorFunctionSpace(mesh, "Lagrange", 1)
+
+		# Elasticity parameters
+		E, nu = 1.0, 0.1
+		mu, lmbda = E/(2.0*(1.0 + nu)), E*nu/((1.0 + nu)*(1.0 - 2.0*nu))
+		rho = 1.0
+		alpha = 1.0
+		gamma = -lmbda*alpha/(2*(mu + lmbda))
+		dt = 0.1
+
+		# Source term
+		b = Expression(("2.0*alpha*x[0]", "2.0*gamma*x[1]", "2.0*gamma*x[2]"),\
+		 alpha=alpha, gamma=gamma)
+
+		# Initial conditions
+		u0 = Expression(("0.0", "0.0", "0.0"))
+		v0 = Expression(("0.0", "0.0", "0.0"))
+
+		exact = Expression(("t*t*alpha*x[0]", "t*t*gamma*x[1]", "t*t*gamma*x[2]"),\
+		 alpha=alpha, gamma=gamma, t=0.0)
+
+		solver(mesh, V, u0, v0, b, mu, lmbda, rho, alpha, gamma, dt, exact=exact)
+
+
+
+def solver(mesh, V, u0, v0, f, mu, lmbda, rho, alpha, gamma, dt, version="lvp", exact=None):
+	
+	# Create test and trial functions
+	u = TrialFunction(V)
+	v = TestFunction(V)
+	n = FacetNormal(mesh)
+
+	def eps(u):
+		return (1.0/2.0)*(nabla_grad(u) + transpose(nabla_grad(u)))
+
+	# Stress
+	def sigma(u):
+	 	return  2*mu*eps(u) + lmbda*tr(eps(u))*Identity(v.cell().d)
+
+
+	# Boundary conditions
+	def left_boundary(x, on_boundary):
+		tol = 1E-14
+		return on_boundary and abs(x[0]) < tol
+
+	def right_boundary(x, on_boundary):
+		tol = 1E-14
+		return on_boundary and abs(x[0] - 1) < tol
+
+	def update_boundary(t=0.0):
+		r = Expression(("0.0","t*t*gamma*x[1]","t*t*gamma*x[2]"), gamma=gamma, t=t)
+		l = Expression(("t*t*alpha","t*t*gamma*x[1]","t*t*gamma*x[2]"), \
+			alpha=alpha, gamma=gamma, t=t)
+
+		bc_left = DirichletBC(V, r, left_boundary)
+		bc_right = DirichletBC(V, l, right_boundary)
+		bcs = [bc_left, bc_right]
+		return bcs
+
+
+
+	#------------------- Special case for first time step ----------------------#
+	u2 = interpolate(u0, V)
+
+	F = (dot(u,v) - dot(u2,v) - dt*dot(v0,v) - (dt**2/2)*dot(f,v))*dx + \
+	dt**2/(2.0*rho)*inner(sigma(u2),nabla_grad(v))*dx - dt**2/(2.0*rho)*dot(dot(sigma(u2),n),v)*ds
+
+	a, L = lhs(F), rhs(F)
+
+
+	bcs = update_boundary(t=dt)
+
+	u1 = Function(V)
+	problem = LinearVariationalProblem(a, L, u1, bcs=bcs)
+	solver = LinearVariationalSolver(problem)
+	solver.solve()
+
+	if exact:
+		exact.t = dt
+		u_e = interpolate(exact, V)
+		max_error = np.max(u_e.vector().array() - u1.vector().array())
+		print "first step: ",max_error
+	#----------------------------------------------------------------------------#
+
+
+	# Governing balance equation for the remaining time steps
+
+	F = (dot(u,v) - 2*dot(u1,v) + dot(u2,v) - dt**2*dot(f,v))*dx + \
+		(dt**2/rho)*inner(sigma(u1), grad(v))*dx - (dt**2/rho)*dot(dot(sigma(u1),n),v)*ds
+	u = Function(V)
+	a, L = lhs(F), rhs(F)
+	T = 1.0
+	t = 2*dt
+	counter = 2
+	t1 = time.clock()
+	while t <= T:
+		print "t=",t
+		# Extract linear and bilinear forms from F
+		bcs = update_boundary(t=t)
+		problem = LinearVariationalProblem(a, L, u, bcs=bcs)
+		solver = LinearVariationalSolver(problem)
+		solver.solve()
+		u2.assign(u1)
+		u1.assign(u)
+		#u = TrialFunction(V)
+
+		if exact:
+			exact.t = t
+			u_e = interpolate(exact, V)
+			max_error = np.max(u_e.vector().array() - u1.vector().array())
+			print "error: ",max_error
+
+		t += dt
+		counter += 1
+
+		# plot(u1, mode="displacement", axes=True, title="t=%g"%(t-dt),\
+		#  label="t=%g"%(t-dt), basename="time_dependent_elast")
+		# #title("t="+(t-dt))
+		# # plot(mesh)
+		# interactive()
+	t2 = time.clock()
+	print "Time taken: ", t2-t1
+
+run_simulation("test-case")
+\end{minted}
+
+
+\subsubsection{\texttt{lin\_elast\_assemble.py}}
+\label{time:dependent:assembly:code}
+\begin{minted}[fontsize=\fontsize{9pt}
+{9pt},linenos=false,mathescape,baselinestretch=1.0,fontfamily=tt,xleftmargin=7mm]{python}
+from dolfin import *
+import numpy as np
+import time
+
+
+def run_simulation(version):
+	if version=="test-case":
+
+		# Create mesh
+		mesh = UnitCube(8,8,8)
+
+		# Create function space
+		V = VectorFunctionSpace(mesh, "Lagrange", 1)
+
+		# Elasticity parameters
+		E, nu = 1.0, 0.1
+		mu, lmbda = E/(2.0*(1.0 + nu)), E*nu/((1.0 + nu)*(1.0 - 2.0*nu))
+		rho = 1.0
+		alpha = 1.0
+		gamma = -lmbda*alpha/(2*(mu + lmbda))
+		dt = 0.1
+
+		# Source term
+		b = Expression(("2.0*alpha*x[0]", "2.0*gamma*x[1]", "2.0*gamma*x[2]"),\
+		 alpha=alpha, gamma=gamma)
+
+		# Initial conditions
+		u0 = Expression(("0.0", "0.0", "0.0"))
+		v0 = Expression(("0.0", "0.0", "0.0"))
+
+		exact = Expression(("t*t*alpha*x[0]", "t*t*gamma*x[1]", "t*t*gamma*x[2]"),\
+		 alpha=alpha, gamma=gamma, t=0.0)
+
+		solver(mesh, V, u0, v0, b, mu, lmbda, rho, alpha, gamma, dt, exact=exact)
+
+
+
+def solver(mesh, V, u0, v0, f, mu, lmbda, rho, alpha, gamma, dt, version="lvp", exact=None):
+	
+	# Create test and trial functions
+	u = TrialFunction(V)
+	v = TestFunction(V)
+	n = FacetNormal(mesh)
+
+	def eps(u):
+		return (1.0/2.0)*(nabla_grad(u) + transpose(nabla_grad(u)))
+
+	# Stress
+	def sigma(u):
+	 	return  2*mu*eps(u) + lmbda*tr(eps(u))*Identity(v.cell().d)
+
+
+	# Boundary conditions
+	def left_boundary(x, on_boundary):
+		tol = 1E-14
+		return on_boundary and abs(x[0]) < tol
+
+	def right_boundary(x, on_boundary):
+		tol = 1E-14
+		return on_boundary and abs(x[0] - 1) < tol
+
+	def update_boundary(t=0.0):
+		r = Expression(("0.0","t*t*gamma*x[1]","t*t*gamma*x[2]"), gamma=gamma, t=t)
+		l = Expression(("t*t*alpha","t*t*gamma*x[1]","t*t*gamma*x[2]"), \
+			alpha=alpha, gamma=gamma, t=t)
+
+		bc_left = DirichletBC(V, r, left_boundary)
+		bc_right = DirichletBC(V, l, right_boundary)
+		bcs = [bc_left, bc_right]
+		return bcs
+
+
+
+	#------------------- Special case for first time step ----------------------#
+	u2 = interpolate(u0, V)
+
+	F = (dot(u,v) - dot(u2,v) - dt*dot(v0,v) - (dt**2/2)*dot(f,v))*dx + \
+	dt**2/(2.0*rho)*inner(sigma(u2),nabla_grad(v))*dx - dt**2/(2.0*rho)*dot(dot(sigma(u2),n),v)*ds
+
+	a, L = lhs(F), rhs(F)
+
+	A = assemble(a)
+	b = assemble(L)
+
+	bcs = update_boundary(t=dt)
+	for bc in bcs:
+		bc.apply(A,b)
+
+	u1 = Function(V)
+	solve(A, u1.vector(), b)
+
+	if exact:
+		exact.t = dt
+		u_e = interpolate(exact, V)
+		max_error = np.max(u_e.vector().array() - u1.vector().array())
+		print "first step: ",max_error
+	#----------------------------------------------------------------------------#
+
+
+	# Governing balance equation for the remaining time steps
+
+	F = (dot(u,v) - 2*dot(u1,v) + dot(u2,v) - dt**2*dot(f,v))*dx + \
+		(dt**2/rho)*inner(sigma(u1), grad(v))*dx - dot(dot(sigma(u),n),v)*ds
+	#a = lhs(F)
+	#A = assemble(a)
+	u = Function(V)
+	T = 1.0
+	t = 2*dt
+	counter = 2
+	t1 = time.clock()
+	while t <= T:
+		print t
+		# Extract linear and bilinear forms from F
+		L = rhs(F)
+		bcs = update_boundary(t=t)
+		b = assemble(L)
+		for bc in bcs:
+			bc.apply(A,b)
+		solve(A, u.vector(), b)
+		u2.assign(u1)
+		u1.assign(u)
+		#u = TrialFunction(V)
+
+		if exact:
+			exact.t = t
+			u_e = interpolate(exact, V)
+			max_error = np.max(u_e.vector().array() - u1.vector().array())
+			print max_error
+
+		t += dt
+		counter += 1
+
+		# plot(u1, mode="displacement", axes=True, title="t=%g"%(t-dt),\
+		#  label="t=%g"%(t-dt), basename="time_dependent_elast")
+		# #title("t="+(t-dt))
+		# # plot(mesh)
+		# interactive()
+	t2 = time.clock()
+	print "Time taken: ", t2-t1
+
+
+run_simulation("test-case")
+\end{minted}
+
+
+\subsubsection{\texttt{lin\_elast\_matrix.py}}
+\label{time:dependent:matrix:code}
+\begin{minted}[fontsize=\fontsize{9pt}{9pt},linenos=false,mathescape,baselinestretch=1.0,fontfamily=tt,xleftmargin=7mm]{python}
+from dolfin import *
+import numpy as np
+import time
+
+
+def run_simulation(version):
+	if version=="test-case":
+
+		# Create mesh
+		mesh = UnitCube(8,8,8)
+
+		# Create function space
+		V = VectorFunctionSpace(mesh, "Lagrange", 1)
+
+		# Elasticity parameters
+		E, nu = 1.0, 0.1
+		mu, lmbda = E/(2.0*(1.0 + nu)), E*nu/((1.0 + nu)*(1.0 - 2.0*nu))
+		rho = 1.0
+		alpha = 1.0
+		gamma = -lmbda*alpha/(2*(mu + lmbda))
+		dt = 0.1
+
+		# Source term
+		b = Expression(("2.0*alpha*x[0]", "2.0*gamma*x[1]", "2.0*gamma*x[2]"),\
+		 alpha=alpha, gamma=gamma)
+
+		# Initial conditions
+		u0 = Expression(("0.0", "0.0", "0.0"))
+		v0 = Expression(("0.0", "0.0", "0.0"))
+
+		exact = Expression(("t*t*alpha*x[0]", "t*t*gamma*x[1]", "t*t*gamma*x[2]"),\
+		 alpha=alpha, gamma=gamma, t=0.0)
+
+		solver(mesh, V, u0, v0, b, mu, lmbda, rho, alpha, gamma, dt, exact=exact)
+
+
+
+def solver(mesh, V, u0, v0, f, mu, lmbda, rho, alpha, gamma, dt, version="lvp", exact=None):
+	
+	# Create test and trial functions
+	u = TrialFunction(V)
+	v = TestFunction(V)
+	n = FacetNormal(mesh)
+
+	def eps(u):
+		return (1.0/2.0)*(nabla_grad(u) + transpose(nabla_grad(u)))
+
+	# Stress
+	def sigma(u):
+	 	return  2*mu*eps(u) + lmbda*tr(eps(u))*Identity(v.cell().d)
+
+
+	# Boundary conditions
+	def left_boundary(x, on_boundary):
+		tol = 1E-14
+		return on_boundary and abs(x[0]) < tol
+
+	def right_boundary(x, on_boundary):
+		tol = 1E-14
+		return on_boundary and abs(x[0] - 1) < tol
+
+	def update_boundary(t=0.0):
+		r = Expression(("0.0","t*t*gamma*x[1]","t*t*gamma*x[2]"), gamma=gamma, t=t)
+		l = Expression(("t*t*alpha","t*t*gamma*x[1]","t*t*gamma*x[2]"), \
+			alpha=alpha, gamma=gamma, t=t)
+
+		bc_left = DirichletBC(V, r, left_boundary)
+		bc_right = DirichletBC(V, l, right_boundary)
+		bcs = [bc_left, bc_right]
+		return bcs
+
+
+
+	#------------------- Special case for first time step ----------------------#
+	u2 = interpolate(u0, V)
+
+	F = (dot(u,v) - dot(u2,v) - dt*dot(v0,v) - (dt**2/2)*dot(f,v))*dx + \
+	dt**2/(2.0*rho)*inner(sigma(u2),nabla_grad(v))*dx - dt**2/(2.0*rho)*dot(dot(sigma(u2),n),v)*ds
+
+	a, L = lhs(F), rhs(F)
+
+	A = assemble(a)
+	b = assemble(L)
+
+	bcs = update_boundary(t=dt)
+	for bc in bcs:
+		bc.apply(A,b)
+
+	u1 = Function(V)
+	solve(A, u1.vector(), b)
+
+	if exact:
+		exact.t = dt
+		u_e = interpolate(exact, V)
+		max_error = np.max(u_e.vector().array() - u1.vector().array())
+		print "first step: ",max_error
+	#----------------------------------------------------------------------------#
+
+
+	# Governing balance equation for the remaining time steps
+
+	# F = (dot(u,v) - 2*dot(u1,v) + dot(u2,v) - dt**2*dot(f,v))*dx + \
+	# 	(dt**2/rho)*inner(sigma(u1), grad(v))*dx - dot(dot(sigma(u),n),v)*ds
+	a_m = dot(u,v)*dx
+	a_k1 = inner(sigma(u),nabla_grad(v))*dx
+	a_k2 = inner(dot(sigma(u),n), v)*ds
+	size = len(u1.vector().array())
+	#m = Function(V)
+	#m.vector().array()[:] = np.ones(size)
+	#Ml = inner(Identity(v.cell().d), m.vector())
+	M = assemble(a_m)
+	K1 = assemble(a_k1)
+	K2 = assemble(a_k2)
+	A = M
+	u = Function(V)
+	T = 1.0
+	t = 2*dt
+	counter = 2
+	t1 = time.clock()
+	while t <= T:
+		print t
+		f_k = interpolate(f, V)
+		bcs = update_boundary(t=t)
+		b = 2*M*u1.vector() + dt**2/rho*(K2*u1.vector()- K1*u1.vector()) - M*u2.vector() + \ 
+		dt**2*M*f_k.vector()
+		
+		for bc in bcs:
+			bc.apply(A,b)
+		solve(A, u.vector(), b)
+		u2.assign(u1)
+		u1.assign(u)
+		#u = TrialFunction(V)
+
+		if exact:
+			exact.t = t
+			u_e = interpolate(exact, V)
+			max_error = np.max(u_e.vector().array() - u1.vector().array())
+			print max_error
+
+		t += dt
+		counter += 1
+
+		# plot(u1, mode="displacement", axes=True, title="t=%g"%(t-dt),\
+		#  label="t=%g"%(t-dt), basename="time_dependent_elast")
+		# #title("t="+(t-dt))
+		# # plot(mesh)
+		# interactive()
+	t2 = time.clock()
+	print "Time taken: ", t2-t1
+
+
+run_simulation("test-case")
+\end{minted}
+
+\end{document}
